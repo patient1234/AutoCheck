@@ -13,7 +13,7 @@ import pystray
 import requests
 from PIL import Image, ImageTk
 
-import AutoCheck.Func as ac
+import AutoCheck.func as ac
 
 def center_window(width: int, height: int):
     """使窗口居中显示"""
