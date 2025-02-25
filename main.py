@@ -25,19 +25,16 @@ def center_window(width: int, height: int):
 
 def on_off(frame:tk.Frame=None):
     global thread_check
-    button = None
+    ac.Run = not ac.Run
     if frame:
         button = frame.winfo_children()[2]
-    ac.Run = not ac.Run
-    if ac.Run:
-        if button:
+        if ac.Run:
             button.config(text='停止')
-        main()
-    else:
-        if button:
+            main()
+        else:
             button.config(text='开启')
-        if thread_check.is_alive():
-            thread_check.join()
+            if thread_check.is_alive():
+                thread_check.join()
 
 def on_start(_):
     thread_listen = threading.Thread(target=status_listen)
@@ -62,8 +59,8 @@ def init_tk():
     root.protocol("WM_DELETE_WINDOW", sys.exit)
 
     ctypes.windll.shcore.SetProcessDpiAwareness(1)
-    ScaleFactor = ctypes.windll.shcore.GetScaleFactorForDevice(0)
-    root.tk.call('tk', 'scaling', ScaleFactor / 75)
+    scale_factor = ctypes.windll.shcore.GetScaleFactorForDevice(0)
+    root.tk.call('tk', 'scaling', scale_factor / 75)
 
     root.geometry(f"{window_width}x{window_height}")
     root.minsize(width=900, height=450)
@@ -96,7 +93,7 @@ def init_tk():
     button1 = tk.Button(frame_menu, text='切换班级', font=(font_style_default, 15), bg=third_color, command=partial(class_select, True))
     button2 = tk.Button(frame_menu, text='更新配置', font=(font_style_default, 15), bg=third_color, command=config)
     button3 = tk.Button(frame_menu, text='停止', font=(font_style_default, 15), bg=third_color, command=partial(on_off, frame_menu))
-    button4 = tk.Button(frame_menu, text='隐藏到托盘', font=(font_style_default, 15), bg=third_color, command=root.withdraw)
+    button4 = tk.Button(frame_menu, text='隐藏到托盘', font=(font_style_default, 15), bg=third_color, command=tray_start)
 
     frame_wait.pack(fill=tk.BOTH, expand=True)
     frame_main.pack(fill=tk.BOTH, expand=True)
@@ -289,22 +286,15 @@ def log_send(content: str):
     log(content)
     ac.send_message(content)
 
-def tray():
-    menu = (
-        pystray.MenuItem("显示", root.deiconify),
-    )
-    # 创建系统托盘图标
-    tray_icon = pystray.Icon("app_name", Image.open("assets/icon.png"), "班级魔方自动签到", menu)
-    # 设置图标的提示文本
-    tray_icon.tooltip = "班级魔方"
-    # 显示系统托盘图标
+def tray_start():
+    root.withdraw()
     tray_icon.run()
 
-def status_listen():
+def tray_stop():
+    root.deiconify()
+    tray_icon.stop()
 
-    thread_tray = threading.Thread(target=tray)
-    thread_tray.daemon = True
-    thread_tray.start()
+def status_listen():
 
     while True:
         status = ac.get_status()
@@ -432,6 +422,10 @@ def main():
 
 
 root = tk.Tk()
+
+# 创建系统托盘图标
+tray_icon = pystray.Icon("app_name", Image.open("assets/icon.png"), "班级魔方自动签到",
+                         (pystray.MenuItem("显示", tray_stop),))
 
 frame_wait = tk.Frame()
 frame_qr = tk.Frame()
