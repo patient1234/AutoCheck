@@ -12,8 +12,7 @@ import _tkinter
 import pystray
 import requests
 from PIL import Image, ImageTk
-
-import AutoCheck.func as ac
+from utils import tools as ac
 
 def center_window(width: int, height: int):
     """使窗口居中显示"""
