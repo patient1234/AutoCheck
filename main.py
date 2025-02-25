@@ -25,19 +25,16 @@ def center_window(width: int, height: int):
 
 def on_off(frame:tk.Frame=None):
     global thread_check
-    button = None
+    ac.Run = not ac.Run
     if frame:
         button = frame.winfo_children()[2]
-    ac.Run = not ac.Run
-    if ac.Run:
-        if button:
+        if ac.Run:
             button.config(text='停止')
-        main()
-    else:
-        if button:
+            main()
+        else:
             button.config(text='开启')
-        if thread_check.is_alive():
-            thread_check.join()
+            if thread_check.is_alive():
+                thread_check.join()
 
 def on_start(_):
     thread_listen = threading.Thread(target=status_listen)
@@ -62,8 +59,8 @@ def init_tk():
     root.protocol("WM_DELETE_WINDOW", sys.exit)
 
     ctypes.windll.shcore.SetProcessDpiAwareness(1)
-    ScaleFactor = ctypes.windll.shcore.GetScaleFactorForDevice(0)
-    root.tk.call('tk', 'scaling', ScaleFactor / 75)
+    scale_factor = ctypes.windll.shcore.GetScaleFactorForDevice(0)
+    root.tk.call('tk', 'scaling', scale_factor / 75)
 
     root.geometry(f"{window_width}x{window_height}")
     root.minsize(width=900, height=450)
@@ -96,7 +93,7 @@ def init_tk():
     button1 = tk.Button(frame_menu, text='切换班级', font=(font_style_default, 15), bg=third_color, command=partial(class_select, True))
     button2 = tk.Button(frame_menu, text='更新配置', font=(font_style_default, 15), bg=third_color, command=config)
     button3 = tk.Button(frame_menu, text='停止', font=(font_style_default, 15), bg=third_color, command=partial(on_off, frame_menu))
-    button4 = tk.Button(frame_menu, text='隐藏到托盘', font=(font_style_default, 15), bg=third_color, command=root.withdraw)
+    button4 = tk.Button(frame_menu, text='隐藏到托盘', font=(font_style_default, 15), bg=third_color, command=tray_start)
 
     frame_wait.pack(fill=tk.BOTH, expand=True)
     frame_main.pack(fill=tk.BOTH, expand=True)
@@ -289,57 +286,53 @@ def log_send(content: str):
     log(content)
     ac.send_message(content)
 
-def tray():
-    menu = (
-        pystray.MenuItem("显示", root.deiconify),
-    )
-    # 创建系统托盘图标
-    tray_icon = pystray.Icon("app_name", Image.open("assets/icon.png"), "班级魔方自动签到", menu)
-    # 设置图标的提示文本
-    tray_icon.tooltip = "班级魔方"
-    # 显示系统托盘图标
+def tray_start():
+    global tray_icon
+
+    root.withdraw()
+    tray_icon = pystray.Icon("app_name", Image.open("assets/icon.png"), "班级魔方自动签到",
+                         (pystray.MenuItem("显示", tray_stop),))
     tray_icon.run()
 
+def tray_stop():
+    tray_icon.stop()
+    root.deiconify()
+
 def status_listen():
-
-    thread_tray = threading.Thread(target=tray)
-    thread_tray.daemon = True
-    thread_tray.start()
-
-    while True:
-        status = ac.get_status()
-        if status == '准备检索':
-            if ac.success != 0:
-                log_send('签到成功 : ' + str(ac.success) + '个')
-            if ac.warning != 0:
-                log_send('被标记未签 : ' + str(ac.warning) + '个')
-            if ac.wrong != 0:
-                log_send('可能存在错误 : ' + str(ac.wrong) + '个')
-            if ac.fail != 0:
-                log_send('请求失败 : ' + str(ac.fail) + '个')
-            ac.set_status('继续')
-        elif status == '检索中':
-            text_status.config(text=str(time.strftime('[%H:%M:%S]', time.localtime())) + ' 寻找签到中...')
-        elif status == '暂停':
-            text_status.config(text='[剩余' + ac.left_time(ac.configs['签到启动时间'] + ':00') + ']')
-        elif status == '准备签到':
-            log_send('找到签到 : ' + str(len(ac.matches)) + '个')
-            ac.set_status('继续')
-        elif status == '签到中':
-            text_status.config(text='等待' + '%d' % ac.time_wait_random + '秒...')
-        elif status == '错误':
-            log_send('登录已过期')
-            qr_login(True)
-            log_send('重新登录成功')
-            ac.set_status('继续')
-        elif status == '关闭':
-            try:
-                text_status.config(text='检索已关闭')
-            except RuntimeError:
-                pass
-            except _tkinter.TclError:
-                pass
-        time.sleep(0.2)
+    try:
+        while True:
+            status = ac.get_status()
+            if status == '准备检索':
+                if ac.success != 0:
+                    log_send('签到成功 : ' + str(ac.success) + '个')
+                if ac.warning != 0:
+                    log_send('被标记未签 : ' + str(ac.warning) + '个')
+                if ac.wrong != 0:
+                    log_send('可能存在错误 : ' + str(ac.wrong) + '个')
+                if ac.fail != 0:
+                    log_send('请求失败 : ' + str(ac.fail) + '个')
+                ac.set_status('继续')
+            elif status == '检索中':
+                text_status.config(text=str(time.strftime('[%H:%M:%S]', time.localtime())) + ' 寻找签到中...')
+            elif status == '暂停':
+                text_status.config(text='[剩余' + ac.left_time(ac.configs['签到启动时间'] + ':00') + ']')
+            elif status == '准备签到':
+                log_send('找到签到 : ' + str(len(ac.matches)) + '个')
+                ac.set_status('继续')
+            elif status == '签到中':
+                text_status.config(text='等待' + '%d' % ac.time_wait_random + '秒...')
+            elif status == '错误':
+                log_send('登录已过期')
+                qr_login(True)
+                log_send('重新登录成功')
+                ac.set_status('继续')
+            elif status == '关闭':
+                    text_status.config(text='检索已关闭')
+            time.sleep(0.2)
+    except RuntimeError:
+        pass
+    except _tkinter.TclError:
+        pass
 
 
 def login_thread():
@@ -432,6 +425,10 @@ def main():
 
 
 root = tk.Tk()
+
+# 创建系统托盘图标
+tray_icon = pystray.Icon("app_name", Image.open("assets/icon.png"), "班级魔方自动签到",
+                         (pystray.MenuItem("显示", tray_stop),))
 
 frame_wait = tk.Frame()
 frame_qr = tk.Frame()
