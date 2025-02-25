@@ -292,7 +292,7 @@ def log_send(content: str):
 
 def tray():
     menu = (
-        pystray.MenuItem("显示", root.deiconify)
+        pystray.MenuItem("显示", root.deiconify),
     )
     # 创建系统托盘图标
     tray_icon = pystray.Icon("app_name", Image.open("assets/icon.png"), "班级魔方自动签到", menu)
