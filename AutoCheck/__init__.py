@@ -10,7 +10,7 @@ from functools import partial
 import requests
 from PIL import Image, ImageTk
 
-import AutoCheck as ac
+import AutoCheck.AutoCheck as ac
 
 
 def center_window(width: int, height: int):

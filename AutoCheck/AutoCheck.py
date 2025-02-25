@@ -73,7 +73,7 @@ class QR:
         with open(os.path.join(class_dir, 'cookie.txt'), 'w') as co_file:
             co_file.write(cookie)
 
-        with open('classes/default.txt', 'w') as de_file:
+        with open('../classes/default.txt', 'w') as de_file:
             de_file.write(class_name)
 
     def get_classes(self):
