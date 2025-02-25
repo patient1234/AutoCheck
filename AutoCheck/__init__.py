@@ -2,16 +2,18 @@ import ctypes
 import io
 import json
 import os
+import sys
 import threading
 import time
 import tkinter as tk
 from functools import partial
 
+import _tkinter
+import pystray
 import requests
 from PIL import Image, ImageTk
 
-import AutoCheck.AutoCheck as ac
-
+import AutoCheck.Func as ac
 
 def center_window(width: int, height: int):
     """使窗口居中显示"""
@@ -24,7 +26,9 @@ def center_window(width: int, height: int):
 
 def on_off(frame:tk.Frame=None):
     global thread_check
-    button = frame.winfo_children()[2]
+    button = None
+    if frame:
+        button = frame.winfo_children()[2]
     ac.Run = not ac.Run
     if ac.Run:
         if button:
@@ -33,7 +37,8 @@ def on_off(frame:tk.Frame=None):
     else:
         if button:
             button.config(text='开启')
-        thread_check.join()
+        if thread_check.is_alive():
+            thread_check.join()
 
 def on_start(_):
     thread_listen = threading.Thread(target=status_listen)
@@ -54,6 +59,8 @@ def init_tk():
     global text_class
     # 初始化Tkinter窗口
     root.title("班级魔方自动签到")
+    root.iconphoto(True, tk.PhotoImage(file="assets/icon.png"))
+    root.protocol("WM_DELETE_WINDOW", sys.exit)
 
     ctypes.windll.shcore.SetProcessDpiAwareness(1)
     ScaleFactor = ctypes.windll.shcore.GetScaleFactorForDevice(0)
@@ -90,6 +97,7 @@ def init_tk():
     button1 = tk.Button(frame_menu, text='切换班级', font=(font_style_default, 15), bg=third_color, command=partial(class_select, True))
     button2 = tk.Button(frame_menu, text='更新配置', font=(font_style_default, 15), bg=third_color, command=config)
     button3 = tk.Button(frame_menu, text='停止', font=(font_style_default, 15), bg=third_color, command=partial(on_off, frame_menu))
+    button4 = tk.Button(frame_menu, text='隐藏到托盘', font=(font_style_default, 15), bg=third_color, command=root.withdraw)
 
     frame_wait.pack(fill=tk.BOTH, expand=True)
     frame_main.pack(fill=tk.BOTH, expand=True)
@@ -114,12 +122,13 @@ def init_tk():
     button1.pack(fill='x', expand=True)
     button2.pack(fill='x', expand=True)
     button3.pack(fill='x', expand=True)
+    button4.pack(fill='x', expand=True)
 
     text_log['yscrollcommand'] = scrollbar.set
     try:
         root.mainloop()
     except KeyboardInterrupt:
-        pass
+        sys.exit(0)
     finally:
         try:
             ql.exit()
@@ -131,8 +140,11 @@ def load_qr(url_img):
     global img_qr
     img = Image.open(io.BytesIO(requests.get(url_img).content))
     src_img_qr = ImageTk.PhotoImage(img)
-    img_qr.config(image=src_img_qr)
-    img_qr.image = src_img_qr
+    try:
+        img_qr.config(image=src_img_qr)
+        img_qr.image = src_img_qr
+    except RuntimeError:
+        pass
 
 
 def load_class_online(cookie, option):
@@ -151,7 +163,7 @@ def select_class(cookie):
     frame_big.pack(fill=tk.BOTH)
     for option in class_options:
         button = tk.Button(frame_big, width=30, font=(font_style_default, 15), text=option["name"],
-                           command=partial(load_class_online, ql, cookie, option), bg=third_color)
+                           command=partial(load_class_online, cookie, option), bg=third_color)
         button.pack()
 
 
@@ -278,8 +290,23 @@ def log_send(content: str):
     log(content)
     ac.send_message(content)
 
+def tray():
+    menu = (
+        pystray.MenuItem("显示", root.deiconify)
+    )
+    # 创建系统托盘图标
+    tray_icon = pystray.Icon("app_name", Image.open("assets/icon.png"), "班级魔方自动签到", menu)
+    # 设置图标的提示文本
+    tray_icon.tooltip = "班级魔方"
+    # 显示系统托盘图标
+    tray_icon.run()
 
 def status_listen():
+
+    thread_tray = threading.Thread(target=tray)
+    thread_tray.daemon = True
+    thread_tray.start()
+
     while True:
         status = ac.get_status()
         if status == '准备检索':
@@ -307,7 +334,12 @@ def status_listen():
             log_send('重新登录成功')
             ac.set_status('继续')
         elif status == '关闭':
-            text_status.config(text='检索已关闭')
+            try:
+                text_status.config(text='检索已关闭')
+            except RuntimeError:
+                pass
+            except _tkinter.TclError:
+                pass
         time.sleep(0.2)
 
 
@@ -373,11 +405,11 @@ def main():
     if not os.path.exists(config_path):
         # 初始化默认配置
         default_data = {
-            '检索间隔时长': None,
-            '签到等待时长': None,
-            '签到启动时间': None,
-            '签到关闭时间': None,
-            'pushplus': None
+            '检索间隔时长': 60,
+            '签到等待时长': 150,
+            '签到启动时间': '',
+            '签到关闭时间': '',
+            'pushplus': ''
         }
         with open(config_path, 'w') as file_configs:
             file_configs.write(json.dumps(default_data, ensure_ascii=False, indent=4))
