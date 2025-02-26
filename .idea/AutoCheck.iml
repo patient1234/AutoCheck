@@ -4,6 +4,10 @@
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/.venv" />
       <excludeFolder url="file://$MODULE_DIR$/paks" />
+      <excludeFolder url="file://$MODULE_DIR$/build" />
+      <excludeFolder url="file://$MODULE_DIR$/classes" />
+      <excludeFolder url="file://$MODULE_DIR$/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/driver" />
     </content>
     <orderEntry type="jdk" jdkName="AutoCheck" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

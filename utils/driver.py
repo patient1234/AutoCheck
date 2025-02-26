@@ -50,21 +50,18 @@ def _download_edgedriver(version: str):
     else:
         # 下载win32位的压缩包
         url = f'https://msedgedriver.azureedge.net/{version}/edgedriver_win32.zip'
-    print('驱动器压缩包下载地址：')
-    print(url)
     response = requests.get(url)
-    print('开始获取驱动器压缩包')
+    print(f'开始获取驱动器v{version}')
     # 保存并解压驱动
     zip_path = f"edgedriver_win{architecture}.zip"
     with open(zip_path, 'wb') as f:
         f.write(response.content)
-    print('驱动器压缩包已下载')
+    print('驱动器已下载，开始解压')
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extract("msedgedriver.exe", "driver")
     os.remove(zip_path)
     os.rename("driver/msedgedriver.exe", "driver/edge.exe")
-    print('文件已解压，压缩包已删除')
-    return os.path.abspath("driver/edge.exe")
+    print('驱动器已解压')
 
 
 def _check_system_bit() -> int:
@@ -99,8 +96,8 @@ def detect():
         else:
             print(f'浏览器版本{edge_version} 和 驱动器版本{driver_version} 不一致')
             print('开始下载浏览器驱动，请稍候')
-            driver_path = _download_edgedriver(edge_version)
-            print(f'驱动已下载，保存在 {driver_path}')
+            _download_edgedriver(edge_version)
+            print(f'驱动已下载')
         return True
     elif not edge_version:
         print('未获取到Edge浏览器的版本信息')
@@ -109,6 +106,6 @@ def detect():
         print('未获取到驱动版本信息')
         # 4.下载驱动器
         print('开始下载浏览器驱动，请稍候')
-        driver_path = _download_edgedriver(edge_version)
-        print(f'驱动已下载，保存在 {driver_path}')
+        _download_edgedriver(edge_version)
+        print(f'驱动已下载')
         return True
