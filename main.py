@@ -13,6 +13,7 @@ import pystray
 import requests
 from PIL import Image, ImageTk
 from utils import tools as ac
+from utils import driver as dr
 
 def center_window(width: int, height: int):
     """使窗口居中显示"""
@@ -185,9 +186,10 @@ def is_logged(reset: bool) -> bool:
 def qr_login(reset: bool = False):
     global ql
     load_frame(frame_qr)
-
     url_img_last = ''
     ql = ac.QR()
+    if not dr.detect():
+        sys.exit()
     ql.start()
     while True:
         ql.load_qr()

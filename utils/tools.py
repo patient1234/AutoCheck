@@ -22,7 +22,7 @@ class QR:
 
     @staticmethod
     def _setup_webdriver() -> WebDriver:
-        service = webdriver.EdgeService(executable_path='driver/edge134.exe')
+        service = webdriver.EdgeService(executable_path='driver/edge.exe')
         options = webdriver.EdgeOptions()
         options.add_argument('--headless')
         options.add_experimental_option('excludeSwitches', ['enable-logging'])
