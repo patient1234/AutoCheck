@@ -284,9 +284,9 @@ def log(content: str):
         text_log.see(tk.END)
 
 
-def log_send(content: str):
+def log_send(content: str, title: str = ""):
     log(content)
-    ac.send_message(content)
+    ac.send_message(content, title)
 
 def tray_start():
     global tray_icon
@@ -294,7 +294,9 @@ def tray_start():
     root.withdraw()
     tray_icon = pystray.Icon("app_name", Image.open("assets/icon.png"), "班级魔方自动签到",
                          (pystray.MenuItem("显示", tray_stop),))
-    tray_icon.run()
+    thread_tray = threading.Thread(target=tray_icon.run)
+    thread_tray.daemon = True
+    thread_tray.start()
 
 def tray_stop():
     tray_icon.stop()
@@ -306,20 +308,20 @@ def status_listen():
             status = ac.get_status()
             if status == '准备检索':
                 if ac.success != 0:
-                    log_send('签到成功 : ' + str(ac.success) + '个')
+                    log_send('成功' + str(ac.success) + '个')
                 if ac.warning != 0:
-                    log_send('被标记未签 : ' + str(ac.warning) + '个')
+                    log_send('可能被标记未签' + str(ac.warning) + '个')
                 if ac.wrong != 0:
-                    log_send('可能存在错误 : ' + str(ac.wrong) + '个')
+                    log_send('可能存在错误' + str(ac.wrong) + '个')
                 if ac.fail != 0:
-                    log_send('请求失败 : ' + str(ac.fail) + '个')
+                    log_send('请求失败' + str(ac.fail) + '个')
                 ac.set_status('继续')
             elif status == '检索中':
                 text_status.config(text=str(time.strftime('[%H:%M:%S]', time.localtime())) + ' 寻找签到中...')
             elif status == '暂停':
                 text_status.config(text='[剩余' + ac.left_time(ac.configs['签到启动时间'] + ':00') + ']')
             elif status == '准备签到':
-                log_send('找到签到 : ' + str(len(ac.matches)) + '个')
+                log_send('签到%d个(%d秒)'%(len(ac.matches), ac.time_wait_random), ac.class_name)
                 ac.set_status('继续')
             elif status == '签到中':
                 text_status.config(text='等待' + '%d' % ac.time_wait_random + '秒...')

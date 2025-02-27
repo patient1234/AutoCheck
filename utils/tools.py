@@ -56,7 +56,7 @@ class QR:
     @staticmethod
     def send_long_message(long_str: str, chunk_size: int=90):
         for i in range(0, len(long_str), chunk_size):
-            send_message(long_str[i:i + chunk_size])
+            send_message(long_str[i:i + chunk_size], "登录链接，需要拼接")
 
     def replace_cookies(self, cookie: str):
         class_dir = self.class_info_path.format(class_name)
@@ -96,11 +96,11 @@ def is_checked(content: str, p_id: str) -> bool:
         return False
 
 
-def send_message(content: str):
+def send_message(content: str, title: str = ''):
 
     pushplus = configs['pushplus']
     if pushplus != '':
-        purl = 'https://www.pushplus.plus/send?token=' + pushplus + '&title=班级魔方自动签到' + '&content=' + content
+        purl = 'https://www.pushplus.plus/send?token=' + pushplus + '&title=' + title + '[自动签到]&content=' + content
         requests.get(purl)
 
 
@@ -154,10 +154,11 @@ def job():
 
         if matches:
             set_status('准备签到')
-            while get_status() != '继续' and Run:
-                time.sleep(0.1)
 
             time_wait_random = time_wait + random.randint(-5, 5)
+
+            while get_status() != '继续' and Run:
+                time.sleep(0.1)
 
             while time_wait_random > 0 and Run:
 
